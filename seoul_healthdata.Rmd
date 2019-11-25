@@ -1,0 +1,156 @@
+---
+title: "서울데이터광장 - 서울시 보건 의료 통계"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(rvest)
+library(httr)
+library(stringr)
+library(data.table)
+
+
+```
+
+```{r}
+dd<-fread("report.txt", sep="\t", header = T, stringsAsFactors = F, encoding = "UTF-8")
+str(dd)
+```
+
+첫열 데이타가 컬럼이름의 일부이다.
+컬럼이름과 첫열 데이타를 합치려고 한다.
+
+```{r}
+coln<-colnames(dd)
+row1<-dd[1]
+
+coln; row1
+dim(coln)
+dim(row1)
+coln[1]
+row1[1,1]
+
+coll<-c()
+for(i in 1:NROW(coln))
+{
+  print(i)
+  print("ddd",i)
+  if(coln[i] == row1[1,i])
+  {
+    coll[i]<-coln[i]
+  }
+  else
+  {
+    print(paste0(coln[i],"_",row1[1,i]))
+    #coll[i]<-paste0(coln[i],"_",row1[1,i])
+  }
+}
+
+i<-1
+
+coln[i] == row1[1,i]
+
+```
+data.table로 row1을 처리하는 과정에서 계속 ERROR가 났다.
+ERROR 내용을 보니, row1[1,i]로 나는 i가 값으로서 동작할거라고 생각했으나, data.table에서는 i를 column name 중 하나로 인식한것 같다.
+
+인식안하게 하는 방법은 옵션으로 with=FALSE를 추가해주는 것이었다.
+
+```{r}
+coln[i] == row1[1,i, with = FALSE]
+```
+
+또는 data.table을 data.frame으로 변경하고 계산하는 것이다.
+```{r}
+row2<-data.frame(row1)
+row1;row2
+coln[i] == row2[1,i]
+
+```
+
+편한 방법으로 하면 되겠고, ..
+data.table은 아직 익숙하지가 않은듯 하다.
+
+
+```{r}
+coln<-colnames(dd)
+row1<-dd[1]
+
+coln;
+row1
+dim(coln)
+dim(row1)
+coln[1]
+row1[1,1]
+row1<-data.frame(row1)
+
+NROW(coln)
+NCOL(row1)
+coll<-c()
+for(i in 1:NROW(coln))
+{
+  print(i)
+  if(coln[i] == row1[1,i])
+  {
+    coll[i]<-coln[i]
+  }
+  else
+  {
+    #print(paste0(coln[i],"_",row1[1,i]))
+    coll[i]<-paste0(coln[i],"_",row1[1,i])
+    print(coll[i])
+  }
+}
+
+colnames(dd)<-coll
+colnames(dd)
+```
+
+
+```{r}
+dd[-1]
+dd<-dd[-1]
+dd
+```
+
+첫열의 Column이름 처리 완료.
+
+
+chr -> integer로 변경
+숫자에 포함된 콤마의 제거
+
+```{r}
+str(dd)
+dd<-data.frame(dd)
+
+
+#dd2<-data.frame(gsub(",","",dd))
+
+
+#for ( i in 1:NROW(dd) ) {
+  for (j in 3:NCOL(dd)) {
+    dd[, j]<-as.integer(gsub(",","",dd[,j]))
+  }
+#}
+
+str(dd)
+dd$기간 %>% as.integer() -> dd$기간
+dd[,3] <- as.integer(dd[,3])
+
+dd[is.na(dd)]<-0
+```
+
+
+간단한 그래프 그려보기
+
+```{r}
+library(ggplot2)
+library(scales)
+
+
+
+ggplot(dd, aes(자치구, 계_병원수, order(계_병원수))) + geom_bar(stat="identity") + theme(axis.text.x = element_text  (angle = 90)) #+ scale_y_continuous(name="병원수", scales=comma) + scale_x_discrete(limits=axis.text.x)
+
+```
+
